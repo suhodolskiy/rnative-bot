@@ -1,0 +1,19 @@
+{
+  "VK_CALLBACK_SECRET": null,
+  "VK_CONFIRM_CODE": null,
+  "SERVER_PORT": null,
+  "telegram": {
+    "token": null,
+    "chatID": null
+  },
+  "vk": {
+    "secret": null,
+    "groupID": null,
+    "confirmCode": null
+  },
+  "discord": {
+    "uri": null,
+    "token": null,
+    "channel": null
+  }
+}
