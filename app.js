@@ -1,11 +1,13 @@
-const request = require('request-promise');
 const bodyParser = require('body-parser');
-const express = require('express');
+const connect = require('connect');
+const axios = require('axios');
+const http = require('http');
 
 const config = require('./config');
-const app = express();
+const app = connect();
 
 app.use(bodyParser.json());
+
 app.use((req, res, next) => {
   if (req.body.secret === config.vk.secret) {
     next();
@@ -13,51 +15,63 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res) => {
-  console.log('Request', req.body.type);
-
   switch (req.body.type) {
     case 'confirmation':
       if (req.body.group_id === config.vk.groupID) {
-        res.send(config.vk.confirmCode);
+        res.end(config.vk.confirmCode);
       }
       break;
     case 'wall_post_new':
-      const { text } = req.body.object;
+      let { id, owner_id, text } = req.body.object;
 
-      if (text && text.indexOf('#help@rnative') === -1) {
-        Promise.all([
-          sendMessageToDiscordChannel(text),
-          sendMessageToTelegramChannel(text)
-        ])
-          .then(() => res.send('ok'))
-          .catch(error => console.error(error));
+      if (text && text.indexOf('@' + config.vk.name) !== -1) {
+        let isHelpPost = false;
+
+        if (text.indexOf('#help') !== -1) {
+          text += `\n\n Link for answer: ${config.vk.link}?w=wall${owner_id}_${id}`;
+          isHelpPost = true;
+        }
+
+        sendMessageToDiscordChannel(
+          isHelpPost
+            ? config.discord.channels.help
+            : config.discord.channels.news,
+          text
+        ).then(() => res.end('ok'));
+      } else {
+        res.end('ok');
       }
+      break;
   }
 });
 
-function sendMessageToDiscordChannel(content) {
-  return request({
-    uri: `${config.discord.uri}/channels/${config.discord.channel}/messages`,
+http.createServer(app).listen(config.server.port, err => {
+  if (err) {
+    return console.log('Something bad happened', err);
+  }
+
+  console.log(`Server is listening on ${config.server.port}`);
+});
+
+function sendMessageToDiscordChannel(channel, content) {
+  return axios({
+    url: `${config.discord.uri}/channels/${channel}/messages`,
     headers: {
       Authorization: `Bot ${config.discord.token}`,
       'Content-Type': 'application/json'
     },
     method: 'POST',
     json: true,
-    body: { content }
+    data: { content }
   });
 }
 
-function sendMessageToTelegramChannel(text) {
-  return request({
-    uri: `https://api.telegram.org/bot${config.telegram.token}/sendMessage`,
-    qs: {
-      chat_id: config.telegram.chatID,
-      text
-    }
-  });
-}
-
-app.listen(config.SERVER_PORT, () => {
-  console.log(`Server is listening on ${config.SERVER_PORT}`);
-});
+// function sendMessageToTelegramChannel(text) {
+//   return request({
+//     uri: `https://api.telegram.org/bot${config.telegram.token}/sendMessage`,
+//     qs: {
+//       chat_id: config.telegram.chatID,
+//       text
+//     }
+//   });
+// }

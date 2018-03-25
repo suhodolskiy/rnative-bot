@@ -1,7 +1,7 @@
 {
-  "VK_CALLBACK_SECRET": null,
-  "VK_CONFIRM_CODE": null,
-  "SERVER_PORT": null,
+  "server": {
+    "port": 8080
+  },
   "telegram": {
     "token": null,
     "chatID": null
@@ -9,11 +9,16 @@
   "vk": {
     "secret": null,
     "groupID": null,
-    "confirmCode": null
+    "confirmCode": null,
+    "link": null,
+    "name": null
   },
   "discord": {
-    "uri": null,
+    "uri": "https://discordapp.com/api",
     "token": null,
-    "channel": null
+    "channels": {
+      "news": null,
+      "help": null
+    }
   }
 }

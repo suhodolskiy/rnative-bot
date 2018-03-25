@@ -1,16 +1,19 @@
 {
   "name": "rnative-bot",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "repository": {
     "type": "git",
     "url": "git+https://suhodolskiy@github.com/suhodolskiy/rnative-bot.git"
   },
   "author": "Ilya Suhodolskiy <https://github.com/suhodolskiy>",
   "license": "ISC",
+  "scripts": {
+    "start": "node app.js",
+    "pm2": "pm2 start ecosystem.json"
+  },
   "dependencies": {
+    "axios": "^0.18.0",
     "body-parser": "^1.18.2",
-    "discord.js": "^11.3.2",
-    "express": "^4.16.3",
-    "fs": "0.0.1-security"
+    "connect": "^3.6.6"
   }
 }
