@@ -22,9 +22,9 @@ app.use((req, res) => {
       }
       break;
     case 'wall_post_new':
-      let { id, owner_id, text } = req.body.object;
+      let { id, owner_id, post_type, text } = req.body.object;
 
-      if (text && text.indexOf('@' + config.vk.name) !== -1) {
+      if (text && text.indexOf('@' + config.vk.name) !== -1 && post_type === 'post') {
         let isHelpPost = false;
 
         if (text.indexOf('#help') !== -1) {
