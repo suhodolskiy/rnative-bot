@@ -22,21 +22,47 @@ app.use((req, res) => {
       }
       break;
     case 'wall_post_new':
-      let { id, owner_id, post_type, text } = req.body.object;
+      let { id, owner_id, post_type, attachments, text } = req.body.object;
 
-      if (text && text.indexOf('@' + config.vk.name) !== -1 && post_type === 'post') {
+      if (
+        text &&
+        text.indexOf('@' + config.vk.name) !== -1 &&
+        post_type === 'post'
+      ) {
         let isHelpPost = false;
+        let embed = {};
 
         if (text.indexOf('#help') !== -1) {
-          text += `\n\n Link for answer: ${config.vk.link}?w=wall${owner_id}_${id}`;
+          text += `\n\n Link for answer: ${
+            config.vk.link
+          }?w=wall${owner_id}_${id}`;
           isHelpPost = true;
         }
+
+        if (attachments && attachments.length) {
+          attachments.some(file => {
+            if (
+              file.type === 'photo' &&
+              file.photo &&
+              (file.photo.photo_604 || file.photo.photo_807)
+            ) {
+              embed.image = {
+                url: file.photo.photo_807 || file.photo.photo_604
+              };
+
+              return true;
+            }
+          });
+        }
+
+        console.log({ isHelpPost, text, embed });
 
         sendMessageToDiscordChannel(
           isHelpPost
             ? config.discord.channels.help
             : config.discord.channels.news,
-          text
+          text,
+          embed
         ).then(() => res.end('ok'));
       } else {
         res.end('ok');
@@ -53,7 +79,7 @@ http.createServer(app).listen(config.server.port, err => {
   console.log(`Server is listening on ${config.server.port}`);
 });
 
-function sendMessageToDiscordChannel(channel, content) {
+function sendMessageToDiscordChannel(channel, content, embed) {
   return axios({
     url: `${config.discord.uri}/channels/${channel}/messages`,
     headers: {
@@ -62,16 +88,6 @@ function sendMessageToDiscordChannel(channel, content) {
     },
     method: 'POST',
     json: true,
-    data: { content }
+    data: { content, embed }
   });
 }
-
-// function sendMessageToTelegramChannel(text) {
-//   return request({
-//     uri: `https://api.telegram.org/bot${config.telegram.token}/sendMessage`,
-//     qs: {
-//       chat_id: config.telegram.chatID,
-//       text
-//     }
-//   });
-// }
