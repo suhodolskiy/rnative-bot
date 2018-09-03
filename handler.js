@@ -1,13 +1,16 @@
-import axios from 'axios'
-
+const axios = require('axios')
 const vkGroupId = parseInt(process.env.VK_GROUP_ID)
+
 module.exports.vk = async (event, context, callback) => {
   const data = JSON.parse(event.body)
 
   switch (data.type) {
     case 'confirmation':
       if (data.group_id === vkGroupId) {
-        callback(null, process.env.VK_CONFIRM_CODE)
+        callback(null, {
+          statusCode: 200,
+          body: process.env.VK_CONFIRM_CODE,
+        })
       } else {
         callback(null, { success: false, message: 'Group id do not match' })
       }
