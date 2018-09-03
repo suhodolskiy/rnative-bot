@@ -1,12 +1,11 @@
 const axios = require('axios')
-const vkGroupId = parseInt(process.env.VK_GROUP_ID)
 
 module.exports.vk = async (event, context, callback) => {
   const data = JSON.parse(event.body)
 
   switch (data.type) {
     case 'confirmation':
-      if (data.group_id === vkGroupId) {
+      if (data.group_id === parseInt(process.env.VK_GROUP_ID)) {
         callback(null, {
           statusCode: 200,
           body: process.env.VK_CONFIRM_CODE,
@@ -16,8 +15,7 @@ module.exports.vk = async (event, context, callback) => {
       }
       break
     case 'wall_post_new':
-      let { id, owner_id, post_type, attachments, text } = data
-
+      let { id, owner_id, post_type, attachments, text } = data.object
       if (text && text.indexOf('@rnative') !== -1 && post_type === 'post') {
         let isHelpPost = false
         let embed = {}
@@ -50,6 +48,11 @@ module.exports.vk = async (event, context, callback) => {
           text,
           embed
         )
+
+        callback(null, {
+          statusCode: 200,
+          body: 'ok',
+        })
       }
 
       callback(null, { success: true })
@@ -61,7 +64,7 @@ const sendMessageToDiscordChannel = (channel, content, embed) =>
   axios({
     url: `https://discordapp.com/api/channels/${channel}/messages`,
     headers: {
-      Authorization: `Bot ${process.env.DISCORD_CONTENT}`,
+      Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
       'Content-Type': 'application/json',
     },
     method: 'POST',
