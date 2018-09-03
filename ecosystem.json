@@ -1,8 +1,0 @@
-{
-  "apps" : [{
-    "name": "RNative Bot",
-    "log_type": "json",
-    "watch": true,
-    "script": "app.js"
-  }]
-}

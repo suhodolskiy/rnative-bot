@@ -8,12 +8,12 @@
   "author": "Ilya Suhodolskiy <https://github.com/suhodolskiy>",
   "license": "ISC",
   "scripts": {
-    "start": "node app.js",
-    "pm2": "pm2 start ecosystem.json"
+    "dev": "serverless offline start"
   },
   "dependencies": {
-    "axios": "^0.18.0",
-    "body-parser": "^1.18.2",
-    "connect": "^3.6.6"
+    "axios": "^0.18.0"
+  },
+  "devDependencies": {
+    "serverless-offline": "^3.25.10"
   }
 }

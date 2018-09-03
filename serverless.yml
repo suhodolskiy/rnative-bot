@@ -1,0 +1,18 @@
+service: aws-rnative-bot
+
+provider:
+  name: aws
+  runtime: nodejs6.10
+  stage: dev
+  region: eu-west-3
+
+plugins:
+  - serverless-offline
+
+functions:
+  app:
+    handler: handler.vk
+    cors: true
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'
