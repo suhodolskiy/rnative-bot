@@ -1,12 +1,12 @@
 {
   "name": "rnative-bot",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "repository": {
     "type": "git",
     "url": "git+https://suhodolskiy@github.com/suhodolskiy/rnative-bot.git"
   },
   "author": "Ilya Suhodolskiy <https://github.com/suhodolskiy>",
-  "license": "ISC",
+  "license": "MIT",
   "scripts": {
     "dev": "serverless offline start"
   },

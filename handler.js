@@ -3,6 +3,14 @@ const axios = require('axios')
 module.exports.vk = async (event, context, callback) => {
   const data = JSON.parse(event.body)
 
+  if (!data || !data.secret || data.secret !== process.env.VK_SECRET_CODE) {
+    callback(null, {
+      statusCode: 401,
+      body: 'No access',
+    })
+    return
+  }
+
   switch (data.type) {
     case 'confirmation':
       if (data.group_id === parseInt(process.env.VK_GROUP_ID)) {
@@ -41,15 +49,24 @@ module.exports.vk = async (event, context, callback) => {
           })
         }
 
-        await sendMessageToDiscordChannel(
-          isHelpPost
-            ? process.env.DISCORD_CHANNEL_HELP
-            : process.env.DISCORD_CHANNEL_NEWS,
-          text,
-          embed
-        )
+        if (!isHelpPost) {
+          await Promise.all([
+            sendMessageToTelegramChannel(text, embed),
+            sendMessageToDiscordChannel(
+              process.env.DISCORD_CHANNEL_NEWS,
+              text,
+              embed
+            ),
+          ])
+        } else {
+          await sendMessageToDiscordChannel(
+            process.env.DISCORD_CHANNEL_HELP,
+            text,
+            embed
+          )
+        }
 
-        callback(null, {
+        await callback(null, {
           statusCode: 200,
           body: 'ok',
         })
@@ -71,3 +88,19 @@ const sendMessageToDiscordChannel = (channel, content, embed) =>
     json: true,
     data: { content, embed },
   })
+
+const sendMessageToTelegramChannel = (text, embed) => {
+  const photo = embed && embed.image && embed.image.url ? embed.image.url : null
+  return axios({
+    url: `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/${
+      photo ? 'sendPhoto' : 'sendMessage'
+    }`,
+    method: 'POST',
+    json: true,
+    data: {
+      chat_id: process.env.TELEGRAM_CHAT_ID,
+      [photo ? 'caption' : 'text']: text,
+      photo,
+    },
+  })
+}
