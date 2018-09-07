@@ -23,62 +23,74 @@ module.exports.vk = async (event, context, callback) => {
       }
       break
     case 'wall_post_new':
-      let { id, owner_id, post_type, attachments, text } = data.object
+      const { post_type, attachments, text } = data.object
+
       if (text && text.indexOf('@rnative') !== -1 && post_type === 'post') {
-        let isHelpPost = false
-        let embed = {}
-
-        if (text.indexOf('#help') !== -1) {
-          text += `\n\n Link for answer: http://vk.com/rnative?w=wall${owner_id}_${id}`
-          isHelpPost = true
+        const post = {
+          help: text.indexOf('#help@rnative') !== -1,
+          text: formatTextFromHashtags(text),
+          images: attachments
+            .filter(
+              (file) =>
+                file.type === 'photo' &&
+                file.photo &&
+                (file.photo.photo_604 || file.photo.photo_807)
+            )
+            .map((file) => file.photo.photo_807 || file.photo.photo_604),
         }
 
-        if (attachments && attachments.length) {
-          attachments.some((file) => {
-            if (
-              file.type === 'photo' &&
-              file.photo &&
-              (file.photo.photo_604 || file.photo.photo_807)
-            ) {
-              embed.image = {
-                url: file.photo.photo_807 || file.photo.photo_604,
-              }
-
-              return true
-            }
-          })
+        try {
+          if (!post.help) {
+            await Promise.all([
+              sendMessageToTelegramChannel(post),
+              sendMessageToDiscordChannel(post),
+            ])
+          } else {
+            await sendMessageToDiscordChannel(post)
+          }
+        } catch (error) {
+          console.error(error)
         }
-
-        if (!isHelpPost) {
-          await Promise.all([
-            sendMessageToTelegramChannel(text, embed),
-            sendMessageToDiscordChannel(
-              process.env.DISCORD_CHANNEL_NEWS,
-              text,
-              embed
-            ),
-          ])
-        } else {
-          await sendMessageToDiscordChannel(
-            process.env.DISCORD_CHANNEL_HELP,
-            text,
-            embed
-          )
-        }
-
-        await callback(null, {
-          statusCode: 200,
-          body: 'ok',
-        })
       }
 
-      callback(null, { success: true })
+      callback(null, {
+        statusCode: 200,
+        body: 'ok',
+      })
+
       break
   }
 }
 
-const sendMessageToDiscordChannel = (channel, content, embed) =>
-  axios({
+const formatTextFromHashtags = (text) =>
+  text
+    .split(' ')
+    .map((w) => {
+      if (w.indexOf('#') !== -1 && w.indexOf('@rnative') !== -1)
+        w = w.substr(0, w.lastIndexOf('#')).replace(/\r|\\n/g, '')
+      return w
+    }, [])
+    .join(' ')
+    .trim()
+
+const formatTextEllipsis = (text, length) =>
+  text.length > length ? text.substring(0, length - 3) + '...' : text
+
+const sendMessageToDiscordChannel = ({ help, text: content, images }) => {
+  const channel = help
+    ? process.env.DISCORD_CHANNEL_HELP
+    : process.env.DISCORD_CHANNEL_NEWS
+
+  const embed =
+    images && images.length
+      ? {
+          image: {
+            url: images[0],
+          },
+        }
+      : null
+
+  return axios({
     url: `https://discordapp.com/api/channels/${channel}/messages`,
     headers: {
       Authorization: `Bot ${process.env.DISCORD_TOKEN}`,
@@ -86,11 +98,17 @@ const sendMessageToDiscordChannel = (channel, content, embed) =>
     },
     method: 'POST',
     json: true,
-    data: { content, embed },
+    data: {
+      content,
+      embed,
+    },
   })
+}
 
-const sendMessageToTelegramChannel = (text, embed) => {
-  const photo = embed && embed.image && embed.image.url ? embed.image.url : null
+const sendMessageToTelegramChannel = ({ text, images }) => {
+  const photo = images && images.length ? images[0] : null
+  const content = photo ? formatTextEllipsis(text, 200) : text
+
   return axios({
     url: `https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/${
       photo ? 'sendPhoto' : 'sendMessage'
@@ -99,7 +117,7 @@ const sendMessageToTelegramChannel = (text, embed) => {
     json: true,
     data: {
       chat_id: process.env.TELEGRAM_CHAT_ID,
-      [photo ? 'caption' : 'text']: text,
+      [photo ? 'caption' : 'text']: content,
       photo,
     },
   })
